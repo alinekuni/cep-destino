@@ -9,12 +9,10 @@
   <meta property="og:title"       content="O Que Muda em 5km? · São Paulo" />
   <meta property="og:description" content="Expectativa de vida, renda, mobilidade, área verde. O CEP conta o resto. Explore os 96 distritos de São Paulo." />
   <meta property="og:locale"      content="pt_BR" />
-
   <!-- Twitter / X -->
   <meta name="twitter:card"        content="summary_large_image" />
   <meta name="twitter:title"       content="O Que Muda em 5km? · São Paulo" />
   <meta name="twitter:description" content="Expectativa de vida, renda, mobilidade, área verde. O CEP conta o resto." />
-
   <!-- SEO -->
   <meta name="description" content="Explore como expectativa de vida, renda e mobilidade variam entre os 96 distritos de São Paulo." />
   <meta name="author"      content="Aline" />
@@ -1592,12 +1590,12 @@ function startExploring() {
 // ── MAP INIT ─────────────────────────────────────────────
 function initMap() {
   map = L.map('map', {
-    center: isMobile() ? [-23.57, -46.62] : [-23.60, -46.62],
-    zoom: isMobile() ? 10 : 11,
+    center: [-23.60, -46.62],
+    zoom: 11,
     zoomControl: false,
     attributionControl: true,
-    minZoom: 10,
-    maxZoom: 13,
+    minZoom: 9,
+    maxZoom: 14,
   });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -1621,6 +1619,13 @@ function initMap() {
       });
     },
   }).addTo(map);
+
+  // Fit all districts into view — works on any screen size
+  const bounds = geojsonLayer.getBounds();
+  map.fitBounds(bounds, {
+    padding: isMobile() ? [16, 16] : [24, 24],
+    maxZoom: isMobile() ? 10 : 11,
+  });
 }
 
 // ── HOVER ────────────────────────────────────────────────
