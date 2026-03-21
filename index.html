@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com https://d3js.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.basemaps.cartocdn.com;" />
   <title>O Que Muda em 5km? · São Paulo</title>
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website" />
-  <meta property="og:title"       content="O Que Muda em 5km? · São Paulo" />
-  <meta property="og:description" content="Expectativa de vida, renda, mobilidade, área verde. O CEP conta o resto. Explore os 96 distritos de São Paulo." />
-  <meta property="og:locale"      content="pt_BR" />
-  <!-- Twitter / X -->
-  <meta name="twitter:card"        content="summary_large_image" />
-  <meta name="twitter:title"       content="O Que Muda em 5km? · São Paulo" />
-  <meta name="twitter:description" content="Expectativa de vida, renda, mobilidade, área verde. O CEP conta o resto." />
-  <!-- SEO -->
-  <meta name="description" content="Explore como expectativa de vida, renda e mobilidade variam entre os 96 distritos de São Paulo." />
-  <meta name="author"      content="Aline" />
+  <meta name="description" content="Um mapa interativo que revela as desigualdades entre os 96 distritos de São Paulo — expectativa de vida, renda, educação e mais." />
+  <meta property="og:title" content="O Que Muda em 5km? · São Paulo" />
+  <meta property="og:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os distritos de São Paulo." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cep-destino.vercel.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="O Que Muda em 5km? · São Paulo" />
+  <meta name="twitter:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os distritos de São Paulo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1580,11 +1577,19 @@ function startExploring() {
   document.getElementById('map-legend').classList.add('visible');
   updateLegend('life_expectancy');
   showMapHint();
-  if (!map) initMap();
-  // On mobile, map container is offset by panel peek — let Leaflet settle after render
-  if (isMobile()) {
-    setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 300);
-  }
+
+  // Wait for the browser to finish the layout pass before Leaflet measures the container.
+  // Two nested rAFs guarantee we're past the first paint, so clientWidth/clientHeight
+  // return the correct values for both desktop sidebar and mobile bottom-sheet layout.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!map) initMap();
+      // On mobile, also re-invalidate after the CSS transition settles (400ms)
+      if (isMobile()) {
+        setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 450);
+      }
+    });
+  });
 }
 
 // ── MAP INIT ─────────────────────────────────────────────
