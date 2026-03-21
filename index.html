@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>O Que Muda em 5km? · São Paulo</title>
-
   <!-- Open Graph -->
   <meta property="og:type"        content="website" />
   <meta property="og:title"       content="O Que Muda em 5km? · São Paulo" />
@@ -1266,6 +1265,14 @@
       /* Chart section */
       .panel-district-bio { font-size: 12px; padding: 0 16px 18px; }
 
+      /* Reserve map space above the peek panel so Leaflet measures correctly
+         and touch targets at the bottom of the map aren't swallowed by the sheet */
+      #map-container { bottom: 100px; }
+
+      /* Panel peek area: only catch taps on the visible strip itself —
+         let touches pass through to the map everywhere else */
+      #data-panel { touch-action: pan-y; }
+
       /* End screen: already uses clamp(), naturally responsive */
       #end-screen { padding: 32px 24px; }
     }
@@ -1547,6 +1554,8 @@ function openSheet() {
   const panel = document.getElementById('data-panel');
   panel.classList.add('sheet-open');
   sheetOpen = true;
+  // Leaflet must recalculate after sheet expands (wait for transition ~400ms)
+  setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 450);
 }
 
 function closeSheet() {
@@ -1554,6 +1563,8 @@ function closeSheet() {
   const panel = document.getElementById('data-panel');
   panel.classList.remove('sheet-open');
   sheetOpen = false;
+  // Recalculate after sheet collapses back to peek
+  setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 450);
 }
 
 function toggleSheet() {
@@ -1572,13 +1583,17 @@ function startExploring() {
   updateLegend('life_expectancy');
   showMapHint();
   if (!map) initMap();
+  // On mobile, map container is offset by panel peek — let Leaflet settle after render
+  if (isMobile()) {
+    setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 300);
+  }
 }
 
 // ── MAP INIT ─────────────────────────────────────────────
 function initMap() {
   map = L.map('map', {
-    center: [-23.60, -46.62],
-    zoom: 11,
+    center: isMobile() ? [-23.57, -46.62] : [-23.60, -46.62],
+    zoom: isMobile() ? 10 : 11,
     zoomControl: false,
     attributionControl: true,
     minZoom: 10,
