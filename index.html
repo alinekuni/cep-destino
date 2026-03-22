@@ -5,14 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com https://d3js.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.basemaps.cartocdn.com;" />
   <title>O Que Muda em 5km? · São Paulo</title>
-  <meta name="description" content="Um mapa interativo que revela as desigualdades entre os 96 distritos de São Paulo — expectativa de vida, renda, educação e mais." />
-  <meta property="og:title" content="O Que Muda em 5km? · São Paulo" />
-  <meta property="og:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os distritos de São Paulo." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://cep-destino.vercel.app" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="O Que Muda em 5km? · São Paulo" />
-  <meta name="twitter:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os districts de São Paulo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1264,19 +1256,20 @@
       /* Chart section */
       .panel-district-bio { font-size: 12px; padding: 0 16px 18px; }
 
-      /* Reserve map space above the peek panel so Leaflet measures correctly
-         and touch targets at the bottom of the map aren't swallowed by the sheet */
-      #map-container { bottom: 100px; }
+      /* Map fills the FULL screen — the bottom sheet overlays it.
+         This is the standard mobile map pattern (Google Maps, Apple Maps).
+         Avoids any height-reservation mismatch that shifts Leaflet tile rendering. */
+      #map-container { bottom: 0; }
 
       /* iOS Safari ≤15.3 bug: height:100% on a child of a position:fixed element
          that has no explicit height: property resolves to 0 — Leaflet measures
          clientHeight:0 and breaks all tile positioning.
-         Fix: bypass inheritance with an explicit calculated height.
+         Fix: explicit full-viewport height so Leaflet always measures correctly.
          Two declarations: vh fallback first, then dvh (dynamic viewport height,
          accounts for iOS URL bar collapsing) for browsers that support it. */
       #map {
-        height: calc(100vh - 100px);
-        height: calc(100dvh - 100px);
+        height: 100vh;
+        height: 100dvh;
       }
 
       /* Panel peek area: only catch taps on the visible strip itself —
@@ -1287,6 +1280,14 @@
       #end-screen { padding: 32px 24px; }
     }
   </style>
+  <!-- Social / OG meta tags for Vercel deploy -->
+  <meta property="og:title" content="O Que Muda em 5km? — CEP Destino" />
+  <meta property="og:description" content="Explore como indicadores de qualidade de vida variam entre distritos de São Paulo." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cep-destino.vercel.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="O Que Muda em 5km? — CEP Destino" />
+  <meta name="twitter:description" content="Explore como indicadores de qualidade de vida variam entre distritos de São Paulo." />
 </head>
 <body>
 
@@ -1603,11 +1604,13 @@ function startExploring() {
         // Mobile: the bottom-sheet panel CSS transition takes ~400ms.
         // Wait for it to finish, then fix Leaflet's size measurement AND
         // fit the bounds — both in the same call so the view is correct.
+        // Bottom padding = 116px (100px peek panel + 16px margin) so
+        // São Paulo renders above the panel, not hidden beneath it.
         setTimeout(() => {
           if (!map) return;
           map.invalidateSize({ animate: false });
           const b = geojsonLayer.getBounds();
-          if (b.isValid()) map.fitBounds(b, { padding: [16, 16], maxZoom: 10 });
+          if (b.isValid()) map.fitBounds(b, { paddingTopLeft: [16, 16], paddingBottomRight: [16, 116], maxZoom: 10 });
         }, 500);
       } else {
         // Desktop: container is already stable — fit immediately.
