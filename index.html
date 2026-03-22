@@ -55,7 +55,19 @@
 
     /* ── RESET ───────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: var(--color-bg); color: var(--color-text-primary); font-family: var(--font-body); }
+    html { height: 100%; overflow: hidden; }
+    body {
+      /* position:fixed on body = iOS canonical fix for bounce/scroll AND
+         creates a stable pixel-sized containing block so absolute children
+         get correct dimensions without any CSS inheritance chain. */
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      font-family: var(--font-body);
+    }
 
     /* ── SCREENS ─────────────────────────────────────────── */
     .screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 100; display: flex; align-items: center; justify-content: center; }
@@ -351,19 +363,18 @@
 
     /* ── MAP CONTAINER ───────────────────────────────────── */
     #map-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
+      /* position:absolute relative to fixed body = covers the viewport exactly.
+         Avoids the fixed→fixed height:100% chain that breaks on iOS Safari. */
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 1;
       opacity: 0;
       transition: opacity 0.8s ease;
     }
     #map-container.visible { opacity: 1; }
-    /* height: 100% works here because parent has explicit height: 100% above */
+    /* JS pinMapToViewport() sets explicit px values at runtime so Leaflet
+       always measures the correct container size regardless of CSS. */
     #map { width: 100%; height: 100%; }
 
     /* Dark map: invert OSM tiles at the container level so there are no
@@ -1541,6 +1552,24 @@ function updateMapBadge(metricKey) {
   if (el && metric) el.textContent = 'mapa · ' + metric.label.toLowerCase();
 }
 
+// ── MAP SIZING ───────────────────────────────────────────
+// Sets pixel-exact dimensions on #map-container and #map using
+// window.innerHeight so Leaflet always measures the right size.
+// Bypasses all CSS inheritance chains and iOS Safari height:100% quirks.
+function pinMapToViewport() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const mc = document.getElementById('map-container');
+  const m  = document.getElementById('map');
+  if (mc) { mc.style.width = w + 'px'; mc.style.height = h + 'px'; }
+  if (m)  { m.style.width  = w + 'px'; m.style.height  = h + 'px'; }
+}
+// Re-pin on orientation change / URL bar show/hide
+window.addEventListener('resize', () => {
+  pinMapToViewport();
+  if (map) map.invalidateSize({ animate: false });
+});
+
 // ── APP STATE ────────────────────────────────────────────
 let map, geojsonLayer;
 let selected = null;
@@ -1592,6 +1621,7 @@ function startExploring() {
   // before Leaflet measures the container dimensions.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      pinMapToViewport();   // set px dimensions before Leaflet init
       if (!map) initMap();
 
       if (isMobile()) {
@@ -1615,6 +1645,24 @@ function startExploring() {
       }
     });
   });
+}
+
+// ── DEBUG MODE (?debug in URL) ────────────────────────────
+// Opens cep-destino.vercel.app?debug on your phone to see exact px values.
+if (window.location.search.includes('debug')) {
+  setTimeout(() => {
+    const mc = document.getElementById('map-container');
+    const m  = document.getElementById('map');
+    const r  = m ? m.getBoundingClientRect() : {};
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;background:rgba(200,0,0,0.85);color:#fff;font:12px monospace;padding:8px;z-index:9999;';
+    el.innerHTML =
+      `vh=${window.innerHeight} vw=${window.innerWidth}<br>` +
+      `body: ${document.body.clientWidth}×${document.body.clientHeight}<br>` +
+      `#map: ${Math.round(r.width||0)}×${Math.round(r.height||0)} at (${Math.round(r.left||0)},${Math.round(r.top||0)})<br>` +
+      `#map-container: ${mc?mc.clientWidth:'-'}×${mc?mc.clientHeight:'-'}`;
+    document.body.appendChild(el);
+  }, 1500);
 }
 
 // ── MAP INIT ─────────────────────────────────────────────
