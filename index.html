@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://cep-destino.vercel.app" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="O Que Muda em 5km? · São Paulo" />
-  <meta name="twitter:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os distritos de São Paulo." />
+  <meta name="twitter:description" content="Explora as diferenças de expectativa de vida, renda e educação entre os districts de São Paulo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -368,8 +368,12 @@
     #map-container.visible { opacity: 1; }
     #map { width: 100%; height: 100%; }
 
-    /* Leaflet tile override for dark */
-    .leaflet-tile { filter: brightness(0.9); }
+    /* Dark map: invert OSM tiles at the container level so there are no
+       seams between adjacent tiles. The district SVG overlay lives in
+       .leaflet-overlay-pane (a sibling, not a child) so it is unaffected. */
+    .leaflet-tile-container {
+      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+    }
     /* Smooth fill transition when metric changes */
     .leaflet-interactive { transition: fill 480ms var(--ease-out); }
     .leaflet-control-zoom { display: none; }
@@ -1627,9 +1631,11 @@ function initMap() {
     maxZoom: 14,
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO',
-    subdomains: 'abcd',
+  // OpenStreetMap tiles — already in every version of the CSP, no CDN dependency.
+  // Dark appearance is handled by the CSS filter on .leaflet-tile-container above.
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    subdomains: 'abc',
     maxZoom: 19,
   }).addTo(map);
 
