@@ -1264,6 +1264,17 @@
          and touch targets at the bottom of the map aren't swallowed by the sheet */
       #map-container { bottom: 100px; }
 
+      /* iOS Safari ≤15.3 bug: height:100% on a child of a position:fixed element
+         that has no explicit height: property resolves to 0 — Leaflet measures
+         clientHeight:0 and breaks all tile positioning.
+         Fix: bypass inheritance with an explicit calculated height.
+         Two declarations: vh fallback first, then dvh (dynamic viewport height,
+         accounts for iOS URL bar collapsing) for browsers that support it. */
+      #map {
+        height: calc(100vh - 100px);
+        height: calc(100dvh - 100px);
+      }
+
       /* Panel peek area: only catch taps on the visible strip itself —
          let touches pass through to the map everywhere else */
       #data-panel { touch-action: pan-y; }
