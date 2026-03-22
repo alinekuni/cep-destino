@@ -58,7 +58,7 @@
     html, body { height: 100%; overflow: hidden; background: var(--color-bg); color: var(--color-text-primary); font-family: var(--font-body); }
 
     /* ── SCREENS ─────────────────────────────────────────── */
-    .screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 100; display: flex; align-items: center; justify-content: center; }
     .screen.hidden { display: none; }
 
     /* ── INTRO ───────────────────────────────────────────── */
@@ -352,12 +352,18 @@
     /* ── MAP CONTAINER ───────────────────────────────────── */
     #map-container {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
       z-index: 1;
       opacity: 0;
       transition: opacity 0.8s ease;
     }
     #map-container.visible { opacity: 1; }
+    /* height: 100% works here because parent has explicit height: 100% above */
     #map { width: 100%; height: 100%; }
 
     /* Dark map: invert OSM tiles at the container level so there are no
@@ -1256,21 +1262,9 @@
       /* Chart section */
       .panel-district-bio { font-size: 12px; padding: 0 16px 18px; }
 
-      /* Map fills the FULL screen — the bottom sheet overlays it.
-         This is the standard mobile map pattern (Google Maps, Apple Maps).
-         Avoids any height-reservation mismatch that shifts Leaflet tile rendering. */
-      #map-container { bottom: 0; }
-
-      /* iOS Safari ≤15.3 bug: height:100% on a child of a position:fixed element
-         that has no explicit height: property resolves to 0 — Leaflet measures
-         clientHeight:0 and breaks all tile positioning.
-         Fix: explicit full-viewport height so Leaflet always measures correctly.
-         Two declarations: vh fallback first, then dvh (dynamic viewport height,
-         accounts for iOS URL bar collapsing) for browsers that support it. */
-      #map {
-        height: 100vh;
-        height: 100dvh;
-      }
+      /* #map-container and #map sizing handled in base CSS above:
+         parent has explicit top/left/right/bottom/width/height so #map { height:100% }
+         resolves correctly on all iOS versions — no mobile overrides needed. */
 
       /* Panel peek area: only catch taps on the visible strip itself —
          let touches pass through to the map everywhere else */
