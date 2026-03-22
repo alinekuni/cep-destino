@@ -1578,15 +1578,28 @@ function startExploring() {
   updateLegend('life_expectancy');
   showMapHint();
 
-  // Wait for the browser to finish the layout pass before Leaflet measures the container.
-  // Two nested rAFs guarantee we're past the first paint, so clientWidth/clientHeight
-  // return the correct values for both desktop sidebar and mobile bottom-sheet layout.
+  // Two nested rAFs guarantee the browser has finished its layout pass
+  // before Leaflet measures the container dimensions.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       if (!map) initMap();
-      // On mobile, also re-invalidate after the CSS transition settles (400ms)
+
       if (isMobile()) {
-        setTimeout(() => { if (map) map.invalidateSize({pan: false}); }, 450);
+        // Mobile: the bottom-sheet panel CSS transition takes ~400ms.
+        // Wait for it to finish, then fix Leaflet's size measurement AND
+        // fit the bounds — both in the same call so the view is correct.
+        setTimeout(() => {
+          if (!map) return;
+          map.invalidateSize({ animate: false });
+          const b = geojsonLayer.getBounds();
+          if (b.isValid()) map.fitBounds(b, { padding: [16, 16], maxZoom: 10 });
+        }, 500);
+      } else {
+        // Desktop: container is already stable — fit immediately.
+        if (map && geojsonLayer) {
+          const b = geojsonLayer.getBounds();
+          if (b.isValid()) map.fitBounds(b, { padding: [24, 24], maxZoom: 11 });
+        }
       }
     });
   });
@@ -1624,13 +1637,8 @@ function initMap() {
       });
     },
   }).addTo(map);
-
-  // Fit all districts into view — works on any screen size
-  const bounds = geojsonLayer.getBounds();
-  map.fitBounds(bounds, {
-    padding: isMobile() ? [16, 16] : [24, 24],
-    maxZoom: isMobile() ? 10 : 11,
-  });
+  // fitBounds is called by startExploring() after this returns,
+  // so each platform gets the right timing (desktop: immediate, mobile: after transition).
 }
 
 // ── HOVER ────────────────────────────────────────────────
